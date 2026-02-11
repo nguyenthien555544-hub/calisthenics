@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏋️ Calisthenics Coach Bot</title>
+
+<style>
+body{
+ margin:0;
+ background:#e5ddd5;
+ font-family:Arial,Helvetica,sans-serif;
+}
+#app{
+ max-width:480px;
+ margin:auto;
+ height:100vh;
+ display:flex;
+ flex-direction:column;
+ background:#f0f0f0;
+}
+header{
+ background:#2196f3;
+ color:#fff;
+ padding:12px;
+ text-align:center;
+ font-weight:bold;
+}
+#chat{
+ flex:1;
+ overflow-y:auto;
+ padding:10px;
+}
+.msg{
+ max-width:82%;
+ padding:10px 12px;
+ margin:6px 0;
+ border-radius:12px;
+ font-size:14px;
+ line-height:1.4;
+}
+.bot{
+ background:#fff;
+ align-self:flex-start;
+}
+.user{
+ background:#dcf8c6;
+ align-self:flex-end;
+}
+.time{
+ font-size:10px;
+ opacity:.6;
+ margin-top:4px;
+}
+footer{
+ display:flex;
+ padding:8px;
+ background:#fff;
+}
+input{
+ flex:1;
+ padding:8px 12px;
+ border-radius:20px;
+ border:1px solid #ccc;
+ outline:none;
+}
+button{
+ margin-left:6px;
+ border:none;
+ width:40px;
+ height:40px;
+ border-radius:50%;
+ font-size:16px;
+ color:#fff;
+}
+#send{background:#2196f3}
+#clear{background:#f44336}
+</style>
+</head>
+
+<body>
+<div id="app">
+<header>🏋️ Calisthenics Coach Bot</header>
+
+<div id="chat"></div>
+
+<footer>
+ <input id="input" placeholder="Nhắn gì đó…">
+ <button id="send" onclick="send()">➤</button>
+ <button id="clear" onclick="clearChat()">✕</button>
+</footer>
+</div>
+
+<script>
+/* ====== STORAGE ====== */
+let history = JSON.parse(localStorage.getItem("chat")) || []
+let memory = JSON.parse(localStorage.getItem("memory")) || {
+ level:"beginner",
+ lastWorkout:null
+}
+
+const chat=document.getElementById("chat")
+const input=document.getElementById("input")
+
+function now(){
+ const d=new Date()
+ return d.toLocaleTimeString("vi-VN")+" "+d.toLocaleDateString("vi-VN")
+}
+
+function add(text,who){
+ history.push({text,who,time:now()})
+ localStorage.setItem("chat",JSON.stringify(history))
+ render()
+}
+
+function render(){
+ chat.innerHTML=""
+ history.forEach(m=>{
+  const div=document.createElement("div")
+  div.className="msg "+m.who
+  div.innerHTML=m.text+"<div class='time'>"+m.time+"</div>"
+  chat.appendChild(div)
+ })
+ chat.scrollTop=chat.scrollHeight
+}
+render()
+
+function clearChat(){
+ if(confirm("Xóa toàn bộ lịch sử chat?")){
+  history=[]
+  localStorage.removeItem("chat")
+  render()
+ }
+}
+
+/* ====== DATA BÀI TẬP ====== */
+const DATA={
+ push:{
+  name:"NGỰC – VAI – TAY SAU",
+  basic:[
+   "Push-up",
+   "Incline / Decline push-up",
+   "Dips ghế / xà",
+   "Pike push-up",
+   "Resistance band chest press",
+   "Resistance band triceps extension",
+   "Diamond push-up"
+  ],
+  skill:[
+   "Archer push-up",
+   "Pseudo planche push-up",
+   "Handstand hold",
+   "Handstand push-up"
+  ]
+ },
+ pull:{
+  name:"LƯNG – TAY TRƯỚC – BỤNG",
+  basic:[
+   "Australian pull-up",
+   "Pull-up / Chin-up",
+   "Resistance band row",
+   "Resistance band biceps curl",
+   "Hanging knee raise",
+   "Plank",
+   "Hollow body hold"
+  ],
+  skill:[
+   "Archer pull-up",
+   "L-sit",
+   "Front lever tuck",
+   "Front lever raise"
+  ]
+ },
+ legs:{
+  name:"CHÂN – CORE",
+  basic:[
+   "Squat",
+   "Lunge",
+   "Glute bridge",
+   "Resistance band squat",
+   "Calf raise",
+   "Side plank",
+   "Leg raise"
+  ],
+  skill:[
+   "Pistol squat",
+   "Shrimp squat",
+   "Dragon flag"
+  ]
+ }
+}
+
+/* ====== BOT LOGIC ====== */
+let state=null
+
+function bot(msg){
+ msg=msg.toLowerCase()
+
+ if(msg==="ê"){
+  add("Mình đây 😄\nHôm nay bạn muốn tập **push / pull / chân**, hay **lên lịch 4 tuần**?","bot")
+  return
+ }
+
+ if(msg.includes("lịch")){
+  add(
+`📅 LỊCH 4 TUẦN (CHUẨN)
+
+• Thứ 2: Push
+• Thứ 4: Pull
+• Thứ 6: Legs
+
+Mỗi tuần tăng nhẹ rep / độ khó.
+Bạn đang **khỏe hay mệt** hôm nay?`,
+"bot")
+  return
+ }
+
+ if(msg.includes("khỏe")){
+  memory.level="advanced"
+  localStorage.setItem("memory",JSON.stringify(memory))
+  add("🔥 Ok, mình cho bài **nặng hơn** nha","bot")
+  return
+ }
+
+ if(msg.includes("mệt")){
+  memory.level="beginner"
+  localStorage.setItem("memory",JSON.stringify(memory))
+  add("👌 Hiểu rồi, hôm nay tập **nhẹ – kỹ thuật** thôi","bot")
+  return
+ }
+
+ if(msg.includes("push")||msg.includes("ngực")){
+  show("push"); return
+ }
+ if(msg.includes("pull")||msg.includes("lưng")){
+  show("pull"); return
+ }
+ if(msg.includes("chân")||msg.includes("legs")){
+  show("legs"); return
+ }
+
+ if(msg.includes("skill")){
+  let out="🔥 SKILL CALISTHENICS\n"
+  Object.values(DATA).forEach(g=>{
+   g.skill.forEach(s=>out+="• "+s+"\n")
+  })
+  add(out,"bot"); return
+ }
+
+ add("🤔 Bạn thử nói: **ê / push / pull / chân / lịch / skill**","bot")
+}
+
+function show(type){
+ const g=DATA[type]
+ let out=`💪 BUỔI ${g.name}\n\n`
+ g.basic.forEach(b=>out+="• "+b+"\n")
+ out+="\n🔥 Bài khó:\n"
+ g.skill.forEach(s=>out+="• "+s+"\n")
+ out+="\n👉 Tập xong nói: **xong** / **mệt**"
+ add(out,"bot")
+ memory.lastWorkout=type
+ localStorage.setItem("memory",JSON.stringify(memory))
+}
+
+/* ====== SEND ====== */
+function send(){
+ const t=input.value.trim()
+ if(!t) return
+ add(t,"user")
+ input.value=""
+ setTimeout(()=>bot(t),300)
+}
+</script>
+</body>
+</html>
